@@ -1,0 +1,17 @@
+{
+    "manifest_version": 2,
+    "name": "IndexedDB Utils",
+    "version": "0.1",
+    "description": "Help manage indexeddb during local development and testing",
+    "homepage_url": "",
+    "icons": {
+        "48": "icons/icon-48.png",
+        "96": "icons/icon-96.png"
+    },
+    "browser_action": {
+        "default_icon": "icons/icon-32.png",
+        "default_title": "IndexedDB Utils",
+        "default_popup": "popup/menu.html"
+    },
+    "permissions": ["activeTab"]
+}
