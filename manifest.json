@@ -3,7 +3,7 @@
     "name": "IndexedDB Utils",
     "version": "0.1",
     "description": "Help manage indexeddb during local development and testing",
-    "homepage_url": "",
+    "homepage_url": "https://github.com/swans-one/indexeddb-utils",
     "icons": {
         "48": "icons/icon-48.png",
         "96": "icons/icon-96.png"
