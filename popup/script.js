@@ -15,4 +15,21 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ */
+
+function showDBs(dbs) {
+  const db_list = document.querySelector("#dbs")
+  for (const entry of dbs) {
+    const item = document.createElement("li");
+    item.innerText = entry;
+    db_list.appendChild(item);
+  }
+}
+
+browser
+  .tabs
+  .executeScript({ file: "/content_scripts/read_dbs.js"})
+  .then((db_list) => {
+    console.log(db_list[0]);
+    showDBs(db_list);
+  })
