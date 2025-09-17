@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <body>
+    <h1>IndexedDbTest</h1>
+    <table>
+      <thead>
+        <tr>
+          <td>Database</td>
+          <td>Version</td>
+          <td>Object Store</td>
+          <td>Indexes</td>
+          <td>Count</td>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+    <script>
+      window.onload = () => {
+        console.log("got here");
+
+        const dbOpenReq = window.indexedDB.open('browser-extension-test');
+        let db;
+
+        dbOpenReq.onerror = (event) => {
+          console.log("Error opening database");
+          console.log(event);
+        }
+
+        dbOpenReq.onupgradeneeded = (event) => {
+          console.log("In onupgradeneeded")
+
+          const db = dbOpenReq.result;
+
+          const store = db.createObjectStore("books", {keyPath: "isbn"});
+          const titleIndex = store.createIndex("by_title", "title", {unique: true});
+          const authorIndex = store.createIndex("by_author", "author");
+
+          store.put({
+            title: "A Fire Upon the Deep", author: "Vernor Vinge", isbn: "0312851820"
+          });
+          store.put({
+            title: "The Dispossessed", author: "Ursula Le Guin", isbn: "0060125632"
+          });
+          store.put({
+            title: "Ancillary Justice", author: "Ann Leckie", isbn: "9780316246620"
+          });
+        }
+
+        dbOpenReq.onsuccess = (event) => {
+          console.log("Successfully opened database");
+
+          db = dbOpenReq.result;
+
+          displayData(db, "books");
+        }
+
+        function displayData(dbHandle, storeName) {
+          // const t = db.transaction("books", "readonly");
+          console.log(db.objectStoreNames);
+        }
+
+      }
+    </script>
+  </body>
+</html>

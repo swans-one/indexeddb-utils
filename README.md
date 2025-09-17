@@ -39,3 +39,12 @@ However, IndexedDb doesn't ship with a concept of version
 rollbacks. The suggestion of doing rollbacks using a rollforward isn't
 practical for development. It's also not practical to just be
 extremely careful in developing new versions such that you don't
+
+
+# Todos:
+
+- [ ] Create a small test page / script
+- [ ] Read in what the current databases & tables are on the page
+- [ ] Take a snapshot of a current database / table
+- [ ] Delete all data from a database / table
+- [ ] Restore a snapshot
