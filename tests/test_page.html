@@ -1,5 +1,18 @@
 <!doctype html>
 <html>
+  <style>
+    table {
+      table-layout: fixed;
+      width: 80%;
+      min-width: 1000px;
+      margin: 0 auto;
+      border-collapse: collapse;
+      border: 1px solid black;
+    }
+    td {
+      border: 1px solid black;
+    }
+  </style>
   <body>
     <h1>IndexedDbTest</h1>
     <table>
@@ -17,8 +30,6 @@
     </table>
     <script>
       window.onload = () => {
-        console.log("got here");
-
         const dbOpenReq = window.indexedDB.open('browser-extension-test');
         let db;
 
@@ -47,19 +58,63 @@
           });
         }
 
-        dbOpenReq.onsuccess = (event) => {
+        dbOpenReq.onsuccess = async (event) => {
           console.log("Successfully opened database");
 
           db = dbOpenReq.result;
 
-          displayData(db, "books");
+          dbSummary = await idbSummary(db);
+          console.log(dbSummary);
+          tablify(dbSummary);
         }
 
-        function displayData(dbHandle, storeName) {
-          // const t = db.transaction("books", "readonly");
-          console.log(db.objectStoreNames);
+        async function idbSummary(dbHandle) {
+          const summary = [];
+          const dbName = dbHandle.name;
+          const dbVersion = dbHandle.version;
+          for (const storeName of dbHandle.objectStoreNames) {
+            const t = db.transaction(storeName, "readonly");
+            const store = t.objectStore(storeName);
+            const count = await idbResponse(store.count(), req => req.result);
+
+            summary.push({
+              name: dbName,
+              version: dbVersion,
+              store: storeName,
+              indexes: [...store.indexNames].join(", "),
+              count: count,
+            });
+          }
+          return summary;
         }
 
+        async function tablify(summary) {
+          const tbody = document.querySelector("tbody");
+          for (entry of summary) {
+            const row = [
+              entry.name, entry.version, entry.store, entry.indexes, entry.count
+            ];
+            const tr = document.createElement("tr");
+            for (const item of row) {
+              const td = document.createElement("td");
+              td.appendChild(document.createTextNode(item));
+              tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+          }
+        }
+
+
+        function idbResponse(request, onSuccess) {
+          return new Promise((resolve, reject) => {
+            request.onerror = (ev) => {
+              reject(`IDBRequest Error: ${ev.target.error}`);
+            }
+            request.onsuccess = (ev) => {
+              resolve(onSuccess(ev.target));
+            }
+          });
+        }
       }
     </script>
   </body>
