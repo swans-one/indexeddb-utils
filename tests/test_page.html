@@ -22,7 +22,7 @@
           <td>Version</td>
           <td>Object Store</td>
           <td>Indexes</td>
-          <td>Count</td>
+          <td>Row Count</td>
         </tr>
       </thead>
       <tbody>
@@ -30,7 +30,7 @@
     </table>
     <script>
       window.onload = () => {
-        const dbOpenReq = window.indexedDB.open('browser-extension-test');
+        const dbOpenReq = window.indexedDB.open('browser-extension-test', 2);
         let db;
 
         dbOpenReq.onerror = (event) => {
@@ -40,22 +40,35 @@
 
         dbOpenReq.onupgradeneeded = (event) => {
           console.log("In onupgradeneeded")
-
           const db = dbOpenReq.result;
 
-          const store = db.createObjectStore("books", {keyPath: "isbn"});
-          const titleIndex = store.createIndex("by_title", "title", {unique: true});
-          const authorIndex = store.createIndex("by_author", "author");
+          versionUpgrades(event, {
+            1: (db) => {
+              const store = db.createObjectStore("books", {keyPath: "isbn"});
+              const titleIndex = store.createIndex("by_title", "title", {unique: true});
+              const authorIndex = store.createIndex("by_author", "author");
 
-          store.put({
-            title: "A Fire Upon the Deep", author: "Vernor Vinge", isbn: "0312851820"
-          });
-          store.put({
-            title: "The Dispossessed", author: "Ursula Le Guin", isbn: "0060125632"
-          });
-          store.put({
-            title: "Ancillary Justice", author: "Ann Leckie", isbn: "9780316246620"
-          });
+              store.put({
+                title: "A Fire Upon the Deep", author: "Vernor Vinge", isbn: "0312851820"
+              });
+              store.put({
+                title: "The Dispossessed", author: "Ursula Le Guin", isbn: "0060125632"
+              });
+              store.put({
+                title: "Ancillary Justice", author: "Ann Leckie", isbn: "9780316246620"
+              });
+            },
+            2: (db) => {
+              const store = db.createObjectStore("dogs", {keyPath: "id", autoIncrement: true});
+              const breedIndex = store.createIndex("by_breed", "breed", {unique: true});
+              const countryIndex = store.createIndex("by_country", "country");
+
+              store.put({ breed: "Sheepdog", country: "England" });
+              store.put({ breed: "Poodle", country: "France" });
+              store.put({ breed: "Sheepadoodle", country: "Ohio" });
+            }
+          })
+
         }
 
         dbOpenReq.onsuccess = async (event) => {
@@ -114,6 +127,25 @@
               resolve(onSuccess(ev.target));
             }
           });
+        }
+
+        function versionUpgrades(event, upgradeFns) {
+          const db = event.target.result;
+          const current = event.oldVersion;
+          const requested = event.newVersion;
+
+          const versions = Object.keys(upgradeFns).map(Number).sort();
+          if (!versions.includes(current)) {
+            throw new Error(`upgradeFns missing current version: ${current}`);
+          }
+          if (!versions.includes(requested)) {
+            throw new Error(`upgradeFns missing requested version: ${requested}`);
+          }
+          const versionsSlice = versions.slice(versions.indexOf(current) + 1);
+          for (v of versionsSlice) {
+            upgradeFns[v](db);
+            console.log(`Successfully upgraded ${db.name} to version: ${v}`);
+          }
         }
       }
     </script>
