@@ -18,7 +18,43 @@
  */
 
 
-(() => {
-  const test_val = "We got it!";
-  return test_val;
+(async () => {
+  function idbResponse(request, onSuccess) {
+    return new Promise((resolve, reject) => {
+      request.onerror = (ev) => {
+        reject(`IDBRequest Error: ${ev.target.error}`);
+      }
+      request.onsuccess = (ev) => {
+        resolve(onSuccess(ev.target));
+      }
+    });
+  }
+
+  return await window.indexedDB.databases().then(async dbs => {
+    let summaries = [];
+    for (const {name: dbName, version: dbVersion} of dbs) {
+
+      let dbcon = await idbResponse(window.indexedDB.open(dbName), req => {
+        return req.result;
+      });
+
+      const storeNames = [...dbcon.objectStoreNames];
+
+      for (storeName of storeNames) {
+        const tx = dbcon.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        const indexes = [...store.indexNames].join(", ");
+        const count = await idbResponse(store.count(), req => req.result);
+
+        summaries.push({
+          name: dbName,
+          version: dbVersion,
+          store: storeName,
+          indexes: indexes,
+          count: count,
+        })
+      }
+    }
+    return summaries;
+  });
 })();

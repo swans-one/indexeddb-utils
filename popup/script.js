@@ -29,7 +29,10 @@ function showDBs(dbs) {
 browser
   .tabs
   .executeScript({ file: "/content_scripts/read_dbs.js"})
-  .then((db_list) => {
-    console.log(db_list[0]);
-    showDBs(db_list);
+  .then((script_result) => {
+    console.log("here");
+    console.log(script_result[0][0]);
+    showDBs(script_result[0].map(
+      e => `${e.name}: v${e.version}, ${e.store}, ${e.indexes}, ${e.count}`
+    ));
   })
