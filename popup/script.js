@@ -25,6 +25,7 @@ function showDBs(dbs) {
   for (const [[dbName, dbVersion], metadata] of collapsed) {
     let tr = document.createElement("tr");
 
+    /* The first `tr` gets db name & version, with rowSpan */
     const tdDbName = document.createElement("td");
     tdDbName.appendChild(document.createTextNode(dbName));
     tdDbName.rowSpan = metadata.length;
@@ -35,6 +36,7 @@ function showDBs(dbs) {
     tdDbVersion.rowSpan = metadata.length;
     tr.appendChild(tdDbVersion);
 
+    /* All `tr`s get the rest of the columns */
     for (meta of metadata) {
       for (const colName of metadataColNames) {
         const td = document.createElement("td")
@@ -42,6 +44,9 @@ function showDBs(dbs) {
         tr.appendChild(td);
       }
       tbody.appendChild(tr);
+
+      /* Create the next row inside this loop so we don't keep adding
+      name and version */
       tr = document.createElement("tr");
     }
   }
