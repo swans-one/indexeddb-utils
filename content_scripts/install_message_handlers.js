@@ -29,10 +29,12 @@
     console.log(`Take Snapshot: ${dbName}, ${dbVersion}`);
   }
   function clearDb(msg) {
-    console.log("Clear Database");
+    const {dbName, dbVersion} = msg;
+    console.log(`Clear Database: ${dbName}, ${dbVersion}`);
   }
   function deleteDb(msg) {
-    console.log("Delete Database");
+    const {dbName, dbVersion} = msg;
+    console.log(`Delete Database: ${dbName}, ${dbVersion}`);
   }
 
   browser.runtime.onMessage.addListener((message) => {

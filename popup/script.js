@@ -30,6 +30,9 @@ function showDBs(dbs) {
     tdDbName.appendChild(document.createTextNode(dbName));
     tdDbName.rowSpan = metadata.length;
     tdDbName.classList.add("database-name");
+    const div = document.createElement("div");
+    tdDbName.appendChild(div);
+    addButtons(div, dbName, dbVersion);
     tr.appendChild(tdDbName);
 
     const tdDbVersion = document.createElement("td");
@@ -104,32 +107,47 @@ function collapseObjects(objList, keys, eqFn) {
   return output;
 }
 
-function addButtons() {
-  const dbNameCells = document.querySelectorAll(".database-name");
+function addButtons(inside, dbName, dbVersion) {
+  /* onclick handler for buttons that sends the appropriate message */
+  function sendMessage(clickEvent) {
+    const {command, dbName, dbVersion} = clickEvent.target.dataset;
+    browser
+      .tabs
+      .query({ active: true, currentWindow: true})
+      .then((activeTabs) => {
+        // There should only be one active tab
+        const tabId = activeTabs[0].id;
+        browser.tabs.sendMessage(
+          tabId, {command: command, dbName: dbName, dbVersion: dbVersion}
+        );
+      });
+  }
+
   const buttons = ["snapshot", "clear", "delete"];
-  for (elem of dbNameCells) {
-    const div = document.createElement("div");
-    elem.appendChild(div);
-    for (buttonText of buttons) {
-      const button = document.createElement("button")
-      button.appendChild(document.createTextNode(buttonText))
-      div.appendChild(button)
-    }
+  for (buttonCommand of buttons) {
+    const button = document.createElement("button")
+    button.onclick = sendMessage;
+    button.dataset.command = buttonCommand;
+    button.dataset.dbName = dbName;
+    button.dataset.dbVersion = dbVersion;
+    button.appendChild(document.createTextNode(buttonCommand))
+    inside.appendChild(button)
   }
 }
 
 // TODO: Next steps
-// - "install message handler" script
-//   - Has message handlers for snapshot, clear, delete
-// - Tie up messages for buttons
-//   - "snapshot"
-//   - "clear"
-//   - "delete"
-// - Create a snapshot view
-//   - Tabs for databases versus snapshot
-// - snapshot restore functionality
-//   - Add a "restore" button to snapshot listings
-//   - Add "restore latest" button to databases
+// - [x] "install message handler" script
+//   - [x] Has message handlers for snapshot, clear, delete
+//   - [ ] Tie up basic message passing for buttons
+// - [ ] Implement message functionality for
+//   - [ ] "snapshot"
+//   - [ ] "clear"
+//   - [ ] "delete"
+// - [ ] Create a snapshot view
+//   - [ ] Tabs for databases versus snapshot
+// - [ ] snapshot restore functionality
+//   - [ ] Add a "restore" button to snapshot listings
+//   - [ ] Add "restore latest" button to databases
 
 browser
   .tabs
@@ -152,5 +170,4 @@ browser
   .executeScript({ file: "/content_scripts/read_dbs.js"})
   .then((script_result) => {
     showDBs(script_result[0]);
-    addButtons();
   })
