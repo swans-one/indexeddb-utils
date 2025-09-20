@@ -133,10 +133,24 @@ function addButtons() {
 
 browser
   .tabs
+  .executeScript({ file: "/content_scripts/install_message_handlers.js" })
+  .then((script_result) => {
+    browser
+      .tabs
+      .query({ active: true, currentWindow: true })
+      .then((activeTabs) => {
+        // There should only be one
+        const tabId = activeTabs[0].id;
+        browser.tabs.sendMessage(
+          tabId, {command: "snapshot", dbName: "test", dbVersion: 2}
+        );
+      });
+  });
+
+browser
+  .tabs
   .executeScript({ file: "/content_scripts/read_dbs.js"})
   .then((script_result) => {
-    console.log("here");
-    console.log(script_result[0][0]);
     showDBs(script_result[0]);
     addButtons();
   })
