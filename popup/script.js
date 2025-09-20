@@ -18,11 +18,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 function showDBs(dbs) {
-  const db_list = document.querySelector("#dbs")
-  for (const entry of dbs) {
-    const item = document.createElement("li");
-    item.innerText = entry;
-    db_list.appendChild(item);
+  const tbody = document.querySelector("table tbody");
+  for (const e of dbs) {
+    const tr = document.createElement("tr");
+    const colVals = [e.store, e.indexes, e.count, e.name, e.version];
+    for (col of colVals) {
+      const td = document.createElement("td");
+      td.appendChild(document.createTextNode(col));
+      tr.appendChild(td)
+    }
+    tbody.appendChild(tr);
   }
 }
 
@@ -32,7 +37,5 @@ browser
   .then((script_result) => {
     console.log("here");
     console.log(script_result[0][0]);
-    showDBs(script_result[0].map(
-      e => `${e.name}: v${e.version}, ${e.store}, ${e.indexes}, ${e.count}`
-    ));
+    showDBs(script_result[0]);
   })
