@@ -19,16 +19,83 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 function showDBs(dbs) {
   const tbody = document.querySelector("table tbody");
-  for (const e of dbs) {
-    const tr = document.createElement("tr");
-    const colVals = [e.store, e.indexes, e.count, e.name, e.version];
-    for (col of colVals) {
-      const td = document.createElement("td");
-      td.appendChild(document.createTextNode(col));
-      tr.appendChild(td)
+
+  const collapsed = collapseObjects(dbs, ["name", "version"]);
+  const metadataColNames = ["store", "indexes", "count"];
+  for (const [[dbName, dbVersion], metadata] of collapsed) {
+    let tr = document.createElement("tr");
+
+    const tdDbName = document.createElement("td");
+    tdDbName.appendChild(document.createTextNode(dbName));
+    tdDbName.rowSpan = metadata.length;
+    tr.appendChild(tdDbName);
+
+    const tdDbVersion = document.createElement("td");
+    tdDbVersion.appendChild(document.createTextNode(dbVersion));
+    tdDbVersion.rowSpan = metadata.length;
+    tr.appendChild(tdDbVersion);
+
+    for (meta of metadata) {
+      for (const colName of metadataColNames) {
+        const td = document.createElement("td")
+        td.appendChild(document.createTextNode(meta[colName]));
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+      tr = document.createElement("tr");
     }
-    tbody.appendChild(tr);
   }
+}
+
+/*
+   Collapse a list of objects based on shared values for the
+   given keys
+
+   For example, the following list of objects:
+
+   ```
+   let objList = [
+   {"a": 1, "b": 2},
+   {"a": 1, "b": 3},
+   {"a": 6, "b": 4},
+   {"a": 6, "b": 5},
+   ];
+   let result = collapseObjects(objList, ["a"]);
+   ```
+
+   Would be collapsed into this list:
+
+   ```
+   [
+   [[1], [{"a": 1, "b": 2}, {"a": 1, "b": 3}]],
+   [[6], [{"a": 6, "b": 4}, {"a": 6, "b": 5}]],
+   ]
+   ```
+ */
+function collapseObjects(objList, keys, eqFn) {
+  eqFn = !!eqFn ? eqFn : (a, b) => a === b;
+
+  if (keys.length < 1) {
+    throw new Error("Must provide at least one key");
+  }
+
+  const output = [];
+
+  for (const obj of objList) {
+    const collapseVals = keys.map(k => obj[k]);
+    const matchIndex = output.findIndex(e => {
+      let outputVals = e[0];
+      return outputVals
+        .map((v, i) => eqFn(v, collapseVals[i]))
+        .every(x => x);
+    });
+    if (matchIndex >= 0) {
+      output[matchIndex][1].push(obj);
+    } else {
+      output.push([collapseVals, [obj]]);
+    }
+  }
+  return output;
 }
 
 browser
