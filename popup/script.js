@@ -29,6 +29,7 @@ function showDBs(dbs) {
     const tdDbName = document.createElement("td");
     tdDbName.appendChild(document.createTextNode(dbName));
     tdDbName.rowSpan = metadata.length;
+    tdDbName.classList.add("database-name");
     tr.appendChild(tdDbName);
 
     const tdDbVersion = document.createElement("td");
@@ -103,6 +104,33 @@ function collapseObjects(objList, keys, eqFn) {
   return output;
 }
 
+function addButtons() {
+  const dbNameCells = document.querySelectorAll(".database-name");
+  const buttons = ["snapshot", "clear", "delete"];
+  for (elem of dbNameCells) {
+    const div = document.createElement("div");
+    elem.appendChild(div);
+    for (buttonText of buttons) {
+      const button = document.createElement("button")
+      button.appendChild(document.createTextNode(buttonText))
+      div.appendChild(button)
+    }
+  }
+}
+
+// TODO: Next steps
+// - "install message handler" script
+//   - Has message handlers for snapshot, clear, delete
+// - Tie up messages for buttons
+//   - "snapshot"
+//   - "clear"
+//   - "delete"
+// - Create a snapshot view
+//   - Tabs for databases versus snapshot
+// - snapshot restore functionality
+//   - Add a "restore" button to snapshot listings
+//   - Add "restore latest" button to databases
+
 browser
   .tabs
   .executeScript({ file: "/content_scripts/read_dbs.js"})
@@ -110,4 +138,5 @@ browser
     console.log("here");
     console.log(script_result[0][0]);
     showDBs(script_result[0]);
+    addButtons();
   })
