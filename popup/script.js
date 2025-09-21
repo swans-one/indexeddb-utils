@@ -17,6 +17,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { idbResponse, versionUpgrades } from './indexedDbUtilities.js';
+
+
+/* Given a list of db summaries from `/content_scripts/read_dbs.js`
+   put them into the table listed in */
 function showDBs(dbs) {
   const tbody = document.querySelector("table tbody");
 
@@ -41,7 +46,7 @@ function showDBs(dbs) {
     tr.appendChild(tdDbVersion);
 
     /* All `tr`s get the rest of the columns */
-    for (meta of metadata) {
+    for (const meta of metadata) {
       for (const colName of metadataColNames) {
         const td = document.createElement("td")
         td.appendChild(document.createTextNode(meta[colName]));
@@ -124,7 +129,7 @@ function addButtons(inside, dbName, dbVersion) {
   }
 
   const buttons = ["snapshot", "clear", "delete"];
-  for (buttonCommand of buttons) {
+  for (const buttonCommand of buttons) {
     const button = document.createElement("button")
     button.onclick = sendMessage;
     button.dataset.command = buttonCommand;
@@ -135,19 +140,57 @@ function addButtons(inside, dbName, dbVersion) {
   }
 }
 
+function setupSnapshotIndexedDb(version) {
+  return new Promise((resolve, reject) => {
+    const dbOpenReq = window.indexedDB.open('indexed-db-utils', version);
+
+    dbOpenReq.onerror = (event) => {
+      reject("Error opening indexed-db-utils database");
+    }
+    dbOpenReq.onsuccess = (event) => {
+      resolve(dbOpenReq.result);
+    }
+    dbOpenReq.onupgradeneeded = (event) => {
+      console.log("In indexed-db-utils upgrade needed");
+      versionUpgrades(event, {
+        0: (db) => {},
+        1: (db) => {
+          const store = db.createObjectStore(
+            "snapshots", {keyPath: "id", autoIncrement: true}
+          );
+          const originIndex = store.createIndex("by_origin", "origin");
+          const dbNameIndex = store.createIndex("by_dbName", "dbName");
+          const dbVersionIndex = store.createIndex("by_dbVersion", "dbVersion");
+          const createdIndex = store.createIndex("by_created", "created");
+          const recordIndex = store.createIndex("by_recordCount", "recordCount");
+        },
+      })
+    }
+  });
+}
+
 // TODO: Next steps
 // - [x] "install message handler" script
 //   - [x] Has message handlers for snapshot, clear, delete
-//   - [ ] Tie up basic message passing for buttons
+//   - [x] Tie up basic message passing for buttons
+// - [x] Create an indexedDb database for snapshots here
 // - [ ] Implement message functionality for
 //   - [ ] "snapshot"
+//     - [ ] Get origin information (window.origin or window.url if opaque origin)
+//     - [ ] Get db info
+//     - [ ] Get time info
+//     - [ ] serialize all the contents of all stores
 //   - [ ] "clear"
 //   - [ ] "delete"
 // - [ ] Create a snapshot view
+//   - [x] Basic view
 //   - [ ] Tabs for databases versus snapshot
 // - [ ] snapshot restore functionality
 //   - [ ] Add a "restore" button to snapshot listings
 //   - [ ] Add "restore latest" button to databases
+
+const db = await setupSnapshotIndexedDb(1);
+
 
 browser
   .tabs
