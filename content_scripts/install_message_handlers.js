@@ -46,11 +46,12 @@
     browser.runtime.sendMessage({
       command: "snapshot-data",
       data: {
+        "origin": getOriginOrOpaque(),
         "dbName": dbName,
         "dbVersion": dbVersion,
         "created": Date.now(),
+        "recordCount": storeSnapshots.length,
         "snapshot": storeSnapshots,
-        "origin": getOriginOrOpaque(),
       }
     });
   }
