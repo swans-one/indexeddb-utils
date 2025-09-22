@@ -94,3 +94,28 @@ export function versionUpgrades(event, upgradeFns) {
     console.log(`Successfully upgraded ${db.name} to version: ${v}`);
   }
 }
+
+
+/*
+
+   Return a string that reflects the "same origin" policy of
+   indexeddb.
+
+   Most webpages will use the http origin, consisting of a schema +
+   domain + port, e.g. "https://example.com".
+
+   However, some origins are considered "opaque", namely when it's
+   unclear if the origin can be simplified, e.g. a file.
+
+   The browser identifies opaque origins by returning `null` for
+   `window.origin`. In these cases we will use the full URL as the
+   origin, and will tag the origin as opaque.
+
+ */
+export function getOriginOrOpaque() {
+  let origin = window.origin;
+  if (origin === null) {
+    origin = `[opaque](${window.location.href})`
+  }
+  return origin;
+}

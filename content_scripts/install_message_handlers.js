@@ -17,16 +17,42 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-(() => {
+(async () => {
+  const utilsURL = browser.runtime.getURL('modules/indexedDbUtilities.js')
+  const { idbResponse, getOriginOrOpaque } = await import(utilsURL);
+
   /* We only want to install message handlers on the window once */
   if (window.indexedDbUtilsInstallMessageHandlersHasRun) {
     return;
   }
   window.indexedDbUtilsInstallMessageHandlersHasRun = true;
 
-  function takeSnapshot(msg) {
+  async function takeSnapshot(msg) {
     const {dbName, dbVersion} = msg;
     console.log(`Take Snapshot: ${dbName}, ${dbVersion}`);
+
+    let dbcon = await idbResponse(
+      window.indexedDB.open(dbName), req => req.result
+    );
+    const storeNames = [...dbcon.objectStoreNames];
+    const storeSnapshots = {};
+    for (const storeName of storeNames) {
+      const tx = dbcon.transaction(storeName, "readonly");
+      const store = tx.objectStore(storeName);
+      const all = await idbResponse(store.getAll(), req => req.result);
+      storeSnapshots[storeName] = all;
+    }
+
+    browser.runtime.sendMessage({
+      command: "snapshot-data",
+      data: {
+        "dbName": dbName,
+        "dbVersion": dbVersion,
+        "created": Date.now(),
+        "snapshot": storeSnapshots,
+        "origin": getOriginOrOpaque(),
+      }
+    });
   }
   function clearDb(msg) {
     const {dbName, dbVersion} = msg;

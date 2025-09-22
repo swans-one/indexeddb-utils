@@ -13,5 +13,10 @@
         "default_title": "IndexedDB Utils",
         "default_popup": "popup/menu.html"
     },
+    "background": {
+        "scripts": ["background/background-script.js"],
+        "persistent": false,
+        "type": "module"
+    },
     "permissions": ["activeTab"]
 }

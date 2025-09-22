@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { idbResponse, versionUpgrades } from './indexedDbUtilities.js';
+import { idbResponse, versionUpgrades } from '../modules/indexedDbUtilities.js';
 
 
 /* Given a list of db summaries from `/content_scripts/read_dbs.js`
@@ -177,8 +177,8 @@ function setupSnapshotIndexedDb(version) {
 // - [ ] Implement message functionality for
 //   - [ ] "snapshot"
 //     - [ ] Get origin information (window.origin or window.url if opaque origin)
-//     - [ ] Get db info
-//     - [ ] Get time info
+//     - [x] Get db info
+//     - [x] Get time info
 //     - [ ] serialize all the contents of all stores
 //   - [ ] "clear"
 //   - [ ] "delete"
@@ -195,18 +195,7 @@ const db = await setupSnapshotIndexedDb(1);
 browser
   .tabs
   .executeScript({ file: "/content_scripts/install_message_handlers.js" })
-  .then((script_result) => {
-    browser
-      .tabs
-      .query({ active: true, currentWindow: true })
-      .then((activeTabs) => {
-        // There should only be one
-        const tabId = activeTabs[0].id;
-        browser.tabs.sendMessage(
-          tabId, {command: "snapshot", dbName: "test", dbVersion: 2}
-        );
-      });
-  });
+  .then((script_result) => {});
 
 browser
   .tabs
