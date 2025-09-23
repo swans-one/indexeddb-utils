@@ -42,6 +42,9 @@
       const all = await idbResponse(store.getAll(), req => req.result);
       storeSnapshots[storeName] = all;
     }
+    const records = Object.values(storeSnapshots)
+                          .map(snap => snap.length)
+                          .reduce((a, b) => a + b, 0);
 
     browser.runtime.sendMessage({
       command: "snapshot-data",
@@ -50,7 +53,9 @@
         "dbName": dbName,
         "dbVersion": dbVersion,
         "created": Date.now(),
-        "recordCount": storeSnapshots.length,
+        "stores": storeNames,
+        "storeCount": storeNames.length,
+        "recordCount": records,
         "snapshot": storeSnapshots,
       }
     });
@@ -63,17 +68,26 @@
     const {dbName, dbVersion} = msg;
     console.log(`Delete Database: ${dbName}, ${dbVersion}`);
   }
+  function getOrigin(msg) {
+    const origin = getOriginOrOpaque();
+    return Promise.resolve(origin);
+  }
 
   browser.runtime.onMessage.addListener((message) => {
     switch (message.command) {
       case "snapshot":
-        takeSnapshot(message);
+        return takeSnapshot(message);
         break;
       case "clear":
-        clearDb(message);
+        return clearDb(message);
         break;
       case "delete":
-        deleteDb(message);
+        return deleteDb(message);
+        break;
+      case "get-origin":
+        console.log("get-origin reachable");
+        return getOrigin(message);
+        console.log("get-origin unreachable");
         break;
       default:
         console.log(`Unknown message: ${message.command}`);

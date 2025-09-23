@@ -17,14 +17,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { idbResponse, versionUpgrades } from '../modules/indexedDbUtilities.js';
+import {
+  idbCursorCollect, idbResponse, versionUpgrades
+} from '../modules/indexedDbUtilities.js';
 import { dbConnect } from '../modules/core.js';
 
 
 /* Given a list of db summaries from `/content_scripts/read_dbs.js`
    put them into the table listed in */
 function showDBs(dbs) {
-  const tbody = document.querySelector("table tbody");
+  const tbody = document.querySelector("#table-page-dbs tbody");
 
   const collapsed = collapseObjects(dbs, ["name", "version"]);
   const metadataColNames = ["store", "indexes", "count"];
@@ -64,7 +66,9 @@ function showDBs(dbs) {
 
 /*
    Collapse a list of objects based on shared values for the
-   given keys
+   given keys.
+
+   This is useful for making multi-row columns in tables.
 
    For example, the following list of objects:
 
@@ -141,6 +145,59 @@ function addButtons(inside, dbName, dbVersion) {
   }
 }
 
+async function getPageOrigin() {
+  return await browser
+    .tabs
+    .query({active: true, currentWindow: true})
+    .then(async (activeTabs) => {
+      const tabId = activeTabs[0].id;
+      const out = await browser.tabs.sendMessage(tabId, {command: "get-origin"});
+      return out;
+    });
+}
+
+
+async function getSnapshotMetadata(origin) {
+  const dbCon = await dbConnect();
+  const tx = dbCon.transaction('snapshots', 'readonly');
+  const store = tx.objectStore('snapshots');
+  const byOrigin = store.index('by_origin');
+  const range = IDBKeyRange.only(origin);
+
+  const snapshotMetadata = await idbCursorCollect(
+    byOrigin, range, (v) => {
+      const {snapshot: _, ...metadata} = v;
+      return metadata;
+    }
+  );
+  return snapshotMetadata;
+}
+
+function displaySnapshots(origin, snapshots) {
+  console.log(`Getting snapshots for origin: ${origin}`);
+  console.log(snapshots);
+  const originNode = document.querySelector("#origin");
+  originNode.appendChild(document.createTextNode(
+    `Snapshots for origin: "${origin}"`
+  ));
+
+  const tbody = document.querySelector("#table-snapshots tbody");
+  console.log("got here", snapshots, snapshots.length);
+  for (const snap of snapshots) {
+    const tr = document.createElement("tr");
+    tbody.appendChild(tr);
+    const colVals = [
+      `${snap.dbName} :: v${snap.dbVersion}`,
+      new Date(snap.created).toUTCString(),
+      snap.recordCount
+    ];
+    for (const val of colVals) {
+      const td = document.createElement("td");
+      td.appendChild(document.createTextNode(val))
+      tr.appendChild(td);
+    }
+  }
+}
 
 // TODO: Next steps
 // - [x] "install message handler" script
@@ -164,8 +221,9 @@ function addButtons(inside, dbName, dbVersion) {
 //   - [ ] Add a "restore" button to snapshot listings
 //   - [ ] Add "restore latest" button to databases
 
-const db = await dbConnect(1);
 
+// Make sure any upgrades are run.
+const db = await dbConnect();
 
 browser
   .tabs
@@ -175,6 +233,9 @@ browser
 browser
   .tabs
   .executeScript({ file: "/content_scripts/read_dbs.js"})
-  .then((script_result) => {
+  .then(async (script_result) => {
     showDBs(script_result[0]);
+    const origin = await getPageOrigin();
+    const snapshotMetadata = await getSnapshotMetadata(origin);
+    displaySnapshots(origin, snapshotMetadata);
   })

@@ -42,6 +42,37 @@ export function idbResponse(request, onSuccess) {
   });
 }
 
+/* Async function which collects the results of iterating over a
+   cursor into a list.
+
+   `cursorTarget` :: Either an IDBObjectStore or IDBIndex to iterate
+   through.
+
+   `range` (optional) :: An IDBKeyRange to restrict the cursor to. If
+   not provided will iterate through all objects.
+
+   `valFn` (optional) :: A function to transform the returned value
+   before adding to the list, it will be called with one argument:
+   `cursor.value`. If not provided, it defaults to the identity
+   function.
+
+ */
+export function idbCursorCollect(cursorTarget, range, valFn) {
+  valFn = !!valFn ? valFn : (x) => x;
+
+  return new Promise((resolve, reject) => {
+    const collection = [];
+    cursorTarget.openCursor(range).onsuccess = (ev) => {
+      const cursor = ev.target.result;
+      if (cursor) {
+        collection.push(valFn(cursor.value));
+        cursor.continue();
+      } else {
+        resolve(collection);
+      }
+    }
+  });
+}
 
 /*
    Manage version upgrade functions for an onupgradeneeded handler.
@@ -114,8 +145,8 @@ export function versionUpgrades(event, upgradeFns) {
  */
 export function getOriginOrOpaque() {
   let origin = window.origin;
-  if (origin === null) {
-    origin = `[opaque](${window.location.href})`
+  if (origin === "null") {
+    origin = `[opaque](${window.location.href})`;
   }
   return origin;
 }
