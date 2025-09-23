@@ -74,6 +74,42 @@ export function idbCursorCollect(cursorTarget, range, valFn) {
   });
 }
 
+
+/* Iterate through all the elements of a cursor and perform operations
+   on them. Optionally allows accumulating results in an accumulator.
+
+   `cursorTarget` :: Either an IDBObjectStore or IDBIndex to iterate
+   through.
+
+   `range` (optional) :: An IDBKeyRange to restrict the cursor to. If
+   not provided will iterate through all objects.
+
+   `opFn` (optional) :: If provided this function will be passed the
+   cursor object and an accumulator. It can perform any operation on
+   the cursor and store any information in the accumulator.
+
+   `acc` (optional) :: An optional value to be passed in as the
+   accumulator. If not provided, it will default to undefined.
+
+ */
+export function idbCursorEach(cursorTarget, range, acc, opFn) {
+  opFn = !!opFn ? opFn : (record, acc) => acc + 1;
+  acc = !!opFn ? acc : 0;
+
+  return new Promise((resolve, reject) => {
+    let accumulator = acc;
+    cursorTarget.openCursor(range).onsuccess = (ev) => {
+      const cursor = ev.target.result;
+      if (cursor) {
+        accumulator = opFn(cursor, accumulator);
+        cursor.continue();
+      } else {
+        resolve(accumulator);
+      }
+    }
+  });
+}
+
 /*
    Manage version upgrade functions for an onupgradeneeded handler.
 

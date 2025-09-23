@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 import {
-  idbCursorCollect, idbResponse, versionUpgrades
+  idbCursorCollect, idbCursorEach, idbResponse, versionUpgrades
 } from '../modules/indexedDbUtilities.js';
 import { dbConnect } from '../modules/core.js';
 
@@ -174,15 +174,12 @@ async function getSnapshotMetadata(origin) {
 }
 
 function displaySnapshots(origin, snapshots) {
-  console.log(`Getting snapshots for origin: ${origin}`);
-  console.log(snapshots);
   const originNode = document.querySelector("#origin");
   originNode.appendChild(document.createTextNode(
     `Snapshots for origin: "${origin}"`
   ));
 
   const tbody = document.querySelector("#table-snapshots tbody");
-  console.log("got here", snapshots, snapshots.length);
   for (const snap of snapshots) {
     const tr = document.createElement("tr");
     tbody.appendChild(tr);
@@ -199,6 +196,29 @@ function displaySnapshots(origin, snapshots) {
   }
 }
 
+function setupOnclickHandlers(origin) {
+  const button = document.querySelector("#button-delete-snapshots");
+  button.onclick = () => deleteAllSnapshots(origin);
+}
+
+async function deleteAllSnapshots(origin) {
+  console.log(`Deleting all snapshots for ${origin}`);
+
+  const dbCon = await dbConnect();
+  const tx = dbCon.transaction('snapshots', 'readwrite');
+  const store = tx.objectStore('snapshots');
+  const byOrigin = store.index('by_origin');
+  const range = IDBKeyRange.only(origin);
+
+  const count_deleted = await idbCursorEach(
+    byOrigin, range, 0, (cursor, acc) => {
+      console.log(`Deleting ${cursor.value}`);
+      cursor.delete();
+      return acc + 1;
+  });
+  console.log(`Deleted ${count_deleted} snapshots`);
+}
+
 // TODO: Next steps
 // - [x] "install message handler" script
 //   - [x] Has message handlers for snapshot, clear, delete
@@ -210,32 +230,64 @@ function displaySnapshots(origin, snapshots) {
 //     - [x] Get db info
 //     - [x] Get time info
 //     - [x] serialize all the contents of all stores
-//     - [ ] save the snapshot
+//     - [x] save the snapshot
 //   - [ ] "clear"
 //   - [ ] "delete"
 // - [ ] Create a snapshot view
 //   - [x] Basic view
-//   - [ ] Populated with data
+//   - [x] Populated with data
 //   - [ ] Tabs for databases versus snapshot
+//   - [ ] Toggle filtering to just the current origin
+// - [ ] Snapshot removal
+//   - [ ] Delete a single snapshot
+//   - [x] Delete all snapshots
 // - [ ] snapshot restore functionality
 //   - [ ] Add a "restore" button to snapshot listings
 //   - [ ] Add "restore latest" button to databases
+// - [ ] UI improvements
+//   - [ ] Refresh snapshots when a new one is added (or removed)
+//   - [ ] Styling improvements
 
 
-// Make sure any upgrades are run.
-const db = await dbConnect();
 
-browser
-  .tabs
-  .executeScript({ file: "/content_scripts/install_message_handlers.js" })
-  .then((script_result) => {});
 
-browser
-  .tabs
-  .executeScript({ file: "/content_scripts/read_dbs.js"})
-  .then(async (script_result) => {
-    showDBs(script_result[0]);
+/* Perform all the actual page setup, managing the order of async
+effects.
+ */
+function setup() {
+
+  async function setupDb() {
+    // Make sure any upgrades are run.
+    return await dbConnect();
+  }
+
+  function setupHandlers() {
+    return browser
+      .tabs
+      .executeScript({ file: "/content_scripts/install_message_handlers.js" })
+  }
+
+  function setupPageDbs() {
+    return browser
+      .tabs
+      .executeScript({ file: "/content_scripts/read_dbs.js"})
+      .then((script_results) => {
+        showDBs(script_results[0])
+      })
+  }
+
+  async function setupPopup() {
+    // Requires Handlers set up.
     const origin = await getPageOrigin();
     const snapshotMetadata = await getSnapshotMetadata(origin);
     displaySnapshots(origin, snapshotMetadata);
-  })
+    setupOnclickHandlers(origin);
+  }
+
+  return setupDb()
+    .then(setupHandlers)
+    .then(setupPageDbs)
+    .then(setupPopup);
+}
+
+setup();
