@@ -48,6 +48,7 @@
 
     browser.runtime.sendMessage({
       command: "snapshot-data",
+      target: "background",
       data: {
         "origin": getOriginOrOpaque(),
         "dbName": dbName,
@@ -69,6 +70,7 @@
     console.log(`Delete Database: ${dbName}, ${dbVersion}`);
   }
   function getOrigin(msg) {
+    console.log("in get origin");
     const origin = getOriginOrOpaque();
     return Promise.resolve(origin);
   }
@@ -90,7 +92,9 @@
         console.log("get-origin unreachable");
         break;
       default:
-        console.log(`Unknown message: ${message.command}`);
+        console.log(
+          `Background doesn't understand message type: ${message.command}`
+        );
         break;
     }
   })

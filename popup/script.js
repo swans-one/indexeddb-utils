@@ -156,6 +156,11 @@ async function getPageOrigin() {
     });
 }
 
+async function refreshSnapshotDisplay(origin) {
+  origin = !!origin ? origin : await getPageOrigin();
+  const metadata = await getSnapshotMetadata(origin);
+  displaySnapshots(origin, metadata);
+}
 
 async function getSnapshotMetadata(origin) {
   const dbCon = await dbConnect();
@@ -173,13 +178,30 @@ async function getSnapshotMetadata(origin) {
   return snapshotMetadata;
 }
 
+
+/* Idempotent, first clears anything currently displayed, then
+   displays the data given
+
+ */
 function displaySnapshots(origin, snapshots) {
   const originNode = document.querySelector("#origin");
+
+  // Clear exisiting
+  while (originNode.firstChild) {
+    originNode.removeChild(originNode.firstChild);
+  }
+  // Then add
   originNode.appendChild(document.createTextNode(
     `Snapshots for origin: "${origin}"`
   ));
 
   const tbody = document.querySelector("#table-snapshots tbody");
+  // Clear existing
+  while (tbody.firstChild) {
+    tbody.removeChild(tbody.firstChild);
+  }
+
+  // Then add
   for (const snap of snapshots) {
     const tr = document.createElement("tr");
     tbody.appendChild(tr);
@@ -217,6 +239,7 @@ async function deleteAllSnapshots(origin) {
       return acc + 1;
   });
   console.log(`Deleted ${count_deleted} snapshots`);
+  refreshSnapshotDisplay(origin);
 }
 
 // TODO: Next steps
@@ -249,10 +272,30 @@ async function deleteAllSnapshots(origin) {
 //   - [ ] Styling improvements
 
 
+function installPopupMessageHandlers() {
+  browser.runtime.onMessage.addListener((message) => {
+    console.log("Popup: ", message);
+    if (!message?.target || message.target !== "popup") {
+      return;
+    }
+
+    switch (message.command) {
+      case "refresh-snapshot-display":
+        console.log("refreshing snapshot display");
+        refreshSnapshotDisplay();
+        break;
+      default:
+        console.log(
+          `Popup doesn't understand message type: ${message.command}'`
+        );
+        break;
+    }
+  });
+}
 
 
 /* Perform all the actual page setup, managing the order of async
-effects.
+   effects.
  */
 function setup() {
 
@@ -261,7 +304,7 @@ function setup() {
     return await dbConnect();
   }
 
-  function setupHandlers() {
+  function setupContentScriptHandlers() {
     return browser
       .tabs
       .executeScript({ file: "/content_scripts/install_message_handlers.js" })
@@ -277,15 +320,18 @@ function setup() {
   }
 
   async function setupPopup() {
-    // Requires Handlers set up.
+    installPopupMessageHandlers();
+
+    // Requires Content Script Handlers set up.
     const origin = await getPageOrigin();
+    console.log(origin);
     const snapshotMetadata = await getSnapshotMetadata(origin);
     displaySnapshots(origin, snapshotMetadata);
     setupOnclickHandlers(origin);
   }
 
   return setupDb()
-    .then(setupHandlers)
+    .then(setupContentScriptHandlers)
     .then(setupPageDbs)
     .then(setupPopup);
 }
