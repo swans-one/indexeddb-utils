@@ -1,14 +1,14 @@
 import { idbResponse } from '../modules/indexedDbUtilities.js';
 import { dbConnect } from '../modules/core.js';
 
-browser.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg?.target || msg.target !== "background") {
     return;
   }
 
   switch (msg.command) {
     case "snapshot-data":
-      snapshotData(msg);
+      return snapshotData(msg);
       break;
     default:
       console.log(`Unknown message: $msg.command`);

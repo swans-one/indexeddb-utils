@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
   idbCursorCollect, idbCursorEach, idbResponse, versionUpgrades
 } from '../modules/indexedDbUtilities.js';
-import { dbConnect } from '../modules/core.js';
+import { dbConnect, popupConfirm, promisePopupConfirm } from '../modules/core.js';
 
 
 /* Given a list of db summaries from `/content_scripts/read_dbs.js`
@@ -220,7 +220,19 @@ function displaySnapshots(origin, snapshots) {
 
 function setupOnclickHandlers(origin) {
   const button = document.querySelector("#button-delete-snapshots");
-  button.onclick = () => deleteAllSnapshots(origin);
+  button.onclick = () => {
+    const msg = [
+      "This will delete ALL snapshost for the current origin: ",
+      `"${origin}"`,
+      " It will not delete snapshots from other origins (sites). ",
+      "Do you want to delete all snapshots for this origin?"
+    ].join("")
+    popupConfirm(
+      msg,
+      () => { deleteAllSnapshots(origin); },
+      () => { console.log("Snapshot delete canceled"); }
+    );
+  };
 }
 
 async function deleteAllSnapshots(origin) {
@@ -247,7 +259,7 @@ async function deleteAllSnapshots(origin) {
 //   - [x] Has message handlers for snapshot, clear, delete
 //   - [x] Tie up basic message passing for buttons
 // - [x] Create an indexedDb database for snapshots here
-// - [ ] Implement message functionality for
+// - [x] Implement message functionality for
 //   - [x] "snapshot"
 //     - [x] Get origin information (window.origin or window.url if opaque origin)
 //     - [x] Get db info
@@ -255,7 +267,7 @@ async function deleteAllSnapshots(origin) {
 //     - [x] serialize all the contents of all stores
 //     - [x] save the snapshot
 //   - [x] "clear"
-//   - [ ] "delete"
+//   - [x] "delete"
 // - [ ] Create a snapshot view
 //   - [x] Basic view
 //   - [x] Populated with data
@@ -274,7 +286,7 @@ async function deleteAllSnapshots(origin) {
 
 
 function installPopupMessageHandlers() {
-  browser.runtime.onMessage.addListener((message) => {
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Popup: ", message);
     if (!message?.target || message.target !== "popup") {
       return;
@@ -284,6 +296,9 @@ function installPopupMessageHandlers() {
       case "refresh-snapshot-display":
         console.log("refreshing snapshot display");
         refreshSnapshotDisplay();
+        break;
+      case "popup-confirm":
+        return promisePopupConfirm(message.message)
         break;
       default:
         console.log(
@@ -300,7 +315,7 @@ function installPopupMessageHandlers() {
  */
 function setup() {
 
-  async function setupDb() {
+  async function setupExtensionDb() {
     // Make sure any upgrades are run.
     return await dbConnect();
   }
@@ -325,13 +340,12 @@ function setup() {
 
     // Requires Content Script Handlers set up.
     const origin = await getPageOrigin();
-    console.log(origin);
     const snapshotMetadata = await getSnapshotMetadata(origin);
     displaySnapshots(origin, snapshotMetadata);
     setupOnclickHandlers(origin);
   }
 
-  return setupDb()
+  return setupExtensionDb()
     .then(setupContentScriptHandlers)
     .then(setupPageDbs)
     .then(setupPopup);

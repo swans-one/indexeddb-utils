@@ -74,6 +74,7 @@
   /* Remove all records, but don't delete the database
    */
   async function clearDb(msg) {
+
     const {dbName, dbVersion} = msg;
     console.log(`Clear Database: ${dbName}, ${dbVersion}`);
 
@@ -98,16 +99,44 @@
   }
 
   /* Delete the database entirely
-   */
-  function deleteDb(msg) {
-    const {dbName, dbVersion} = msg;
-    console.log(`Delete Database: ${dbName}, ${dbVersion}`);
 
-    idbResponse(window.indexedDB.deleteDatabase(dbName), req => req.result);
+     This operation can be very slow. See:
+
+     https://bugzilla.mozilla.org/show_bug.cgi?id=1878312
+     https://artificialworlds.net/blog/2024/02/02/deleting-an-indexed-db-store-can-be-incredibly-slow-on-firefox/
+
+     Despite this bug being fixed, it still seems to take a long
+     time. As a result we will do some extra ceremony to show users a
+     "in progress" modal.
+
+   */
+  async function deleteDb(msg) {
+    const {dbName, dbVersion} = msg;
+    console.log(`Delete Database: ${dbName}, version: ${dbVersion}`);
+
+    const popupMsg = [
+      `This will entirely delete the database ${dbName} and all its contents.\n\n`,
+      "This operation can take several minutes, even for small databases.\n\n",
+      "Do you wish to continue?"
+    ].join("");
+
+    browser.runtime.sendMessage({
+      target: "popup",
+      command: "popup-confirm",
+      message: popupMsg,
+    }).then((continueDelete) => {
+      if (continueDelete) {
+        console.log("Confirmed request to delete database");
+        idbResponse(window.indexedDB.deleteDatabase(dbName), x => x)
+          .then((val) => { console.log("successfully deleted db"); })
+          .catch((error) => { console.log(error); });
+      } else {
+        console.log("Delete database request canceled");
+      }
+    })
   }
 
   function getOrigin(msg) {
-    console.log("in get origin");
     const origin = getOriginOrOpaque();
     return Promise.resolve(origin);
   }
@@ -124,9 +153,7 @@
         return deleteDb(message);
         break;
       case "get-origin":
-        console.log("get-origin reachable");
         return getOrigin(message);
-        console.log("get-origin unreachable");
         break;
       default:
         console.log(

@@ -44,9 +44,9 @@ extremely careful in developing new versions such that you don't
 # Todos:
 
 - [x] Create a small test page / script
-- [ ] Read in what the current databases & tables are on the page
-- [ ] Take a snapshot of a current database / table
-- [ ] Delete all data from a database / table
+- [x] Read in what the current databases & tables are on the page
+- [x] Take a snapshot of a current database / table
+- [x] Delete all data from a database / table
 - [ ] Restore a snapshot
 
 Future Development:
@@ -54,3 +54,7 @@ Future Development:
 - [ ] Better schema information beyond index names:
   - column name, unique, autoincrementing, multi-index, etc
 - [ ] Value browser for data in the db
+- [ ] Figure out why deleting an indexedDB database in firefox is so
+      slow.
+  - [ ] Even though https://bugzilla.mozilla.org/show_bug.cgi?id=1878312
+        is marked as resolved

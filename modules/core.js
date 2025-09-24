@@ -23,6 +23,7 @@
    - Database utilites - setup versioning & connections to the
      extension-owned indexeddb
 
+   - UI utilities - popup confirm
  */
 
 import { idbResponse, versionUpgrades } from './indexedDbUtilities.js';
@@ -59,6 +60,26 @@ export function dbConnect(version=DBVERSION) {
           const recordIndex = store.createIndex("by_recordCount", "recordCount");
         },
       })
+    }
+  });
+}
+
+export function popupConfirm(message, onYes, onNo) {
+  const isOk = confirm(message);
+  if (isOk) {
+    onYes();
+  } else {
+    onNo()
+  }
+}
+
+export function promisePopupConfirm(message) {
+  return new Promise((resolve, reject) => {
+    const isOk = confirm(message);
+    if (isOk) {
+      resolve(true);
+    } else {
+      resolve(false);
     }
   });
 }
