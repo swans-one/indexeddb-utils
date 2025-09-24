@@ -73,6 +73,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
           const db = dbOpenReq.result;
 
           versionUpgrades(event, {
+            0: (db) => {},
             1: (db) => {
               const store = db.createObjectStore("books", {keyPath: "isbn"});
               const titleIndex = store.createIndex("by_title", "title", {unique: true});

@@ -102,6 +102,8 @@
   function deleteDb(msg) {
     const {dbName, dbVersion} = msg;
     console.log(`Delete Database: ${dbName}, ${dbVersion}`);
+
+    idbResponse(window.indexedDB.deleteDatabase(dbName), req => req.result);
   }
 
   function getOrigin(msg) {
