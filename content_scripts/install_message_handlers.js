@@ -19,7 +19,9 @@
 
 (async () => {
   const utilsURL = browser.runtime.getURL('modules/indexedDbUtilities.js')
-  const { idbResponse, getOriginOrOpaque } = await import(utilsURL);
+  const {
+    idbCursorEach, idbResponse, getOriginOrOpaque
+  } = await import(utilsURL);
 
   /* We only want to install message handlers on the window once */
   if (window.indexedDbUtilsInstallMessageHandlersHasRun) {
@@ -27,6 +29,13 @@
   }
   window.indexedDbUtilsInstallMessageHandlersHasRun = true;
 
+  /* Fetch all records from all objectStores in the database.
+
+     Send a message to the background script with this snapshot and
+     associated metadata, so it can be stored in the extension's
+     indexeddb.
+
+   */
   async function takeSnapshot(msg) {
     const {dbName, dbVersion} = msg;
     console.log(`Take Snapshot: ${dbName}, ${dbVersion}`);
@@ -61,14 +70,40 @@
       }
     });
   }
-  function clearDb(msg) {
+
+  /* Remove all records, but don't delete the database
+   */
+  async function clearDb(msg) {
     const {dbName, dbVersion} = msg;
     console.log(`Clear Database: ${dbName}, ${dbVersion}`);
+
+    let dbcon = await idbResponse(
+      window.indexedDB.open(dbName), req => req.result
+    );
+    const storeNames = [...dbcon.objectStoreNames];
+
+    const storeCount = storeNames.length;
+    let deleted = 0;
+
+    for (const storeName of storeNames) {
+      const tx = dbcon.transaction(storeName, "readwrite");
+      const store = tx.objectStore(storeName);
+      deleted += await idbCursorEach(
+        store, undefined, 0, (cursor, acc) => {
+          cursor.delete();
+          return acc + 1;
+      });
+    }
+    console.log(`${deleted} records deleted from ${storeCount} stores.`);
   }
+
+  /* Delete the database entirely
+   */
   function deleteDb(msg) {
     const {dbName, dbVersion} = msg;
     console.log(`Delete Database: ${dbName}, ${dbVersion}`);
   }
+
   function getOrigin(msg) {
     console.log("in get origin");
     const origin = getOriginOrOpaque();

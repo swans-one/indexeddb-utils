@@ -254,7 +254,7 @@ async function deleteAllSnapshots(origin) {
 //     - [x] Get time info
 //     - [x] serialize all the contents of all stores
 //     - [x] save the snapshot
-//   - [ ] "clear"
+//   - [x] "clear"
 //   - [ ] "delete"
 // - [ ] Create a snapshot view
 //   - [x] Basic view
@@ -268,7 +268,8 @@ async function deleteAllSnapshots(origin) {
 //   - [ ] Add a "restore" button to snapshot listings
 //   - [ ] Add "restore latest" button to databases
 // - [ ] UI improvements
-//   - [ ] Refresh snapshots when a new one is added (or removed)
+//   - [x] Refresh snapshots when a new one is added (or removed)
+//   - [ ] Refresh on-page databases when a new one  is added (or removed)
 //   - [ ] Styling improvements
 
 
