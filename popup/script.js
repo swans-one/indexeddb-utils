@@ -22,11 +22,26 @@ import {
 } from '../modules/indexedDbUtilities.js';
 import { dbConnect, popupConfirm, promisePopupConfirm } from '../modules/core.js';
 
+/* Idempotent
+ */
+function refreshDisplayDBs() {
+    return browser
+      .tabs
+      .executeScript({ file: "/content_scripts/read_dbs.js"})
+      .then((script_results) => {
+        showDBs(script_results[0])
+      })
+}
 
 /* Given a list of db summaries from `/content_scripts/read_dbs.js`
    put them into the table listed in */
 function showDBs(dbs) {
   const tbody = document.querySelector("#table-page-dbs tbody");
+
+  /* First clear, then populate */
+  while (tbody.firstChild) {
+    tbody.removeChild(tbody.firstChild);
+  }
 
   const collapsed = collapseObjects(dbs, ["name", "version"]);
   const metadataColNames = ["store", "indexes", "count"];
@@ -281,9 +296,19 @@ async function deleteAllSnapshots(origin) {
 //   - [ ] Add "restore latest" button to databases
 // - [ ] UI improvements
 //   - [x] Refresh snapshots when a new one is added (or removed)
-//   - [ ] Refresh on-page databases when a new one  is added (or removed)
+//   - [x] Refresh on-page databases when a one is removed, or cleared
 //   - [ ] Styling improvements
-
+//     - [ ] Better fonts, spacing, etc
+//     - [ ] Better table styling
+//     - [ ] Put the buttons in the right places
+//     - [ ] The window shouldn't shrink when "processing"
+//   - [ ] Audit logging
+//   - [ ] Data flow improvements
+//     - [ ] "processing" state - should always reflect reality?
+//       - [ ] core function for doing "processing"
+//       - [ ] With "debounce" so popup doesn't flicker
+//       - [ ] More things use processing state
+//       - [ ] Opening the popup reflects the current state
 
 function installPopupMessageHandlers() {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -300,6 +325,8 @@ function installPopupMessageHandlers() {
       case "popup-confirm":
         return promisePopupConfirm(message.message)
         break;
+      case "refresh-db-display":
+        return refreshDisplayDBs();
       default:
         console.log(
           `Popup doesn't understand message type: ${message.command}'`
@@ -307,6 +334,29 @@ function installPopupMessageHandlers() {
         break;
     }
   });
+
+  async function toggleProcessingState(processing) {
+    const main = document.querySelector("#main-contents");
+    const notif = document.querySelector("#processing")
+
+    if (processing) {
+      main.classList.add("hidden");
+      notif.classList.remove("hidden");
+    } else {
+      await refreshDisplayDBs();
+      main.classList.remove("hidden");
+      notif.classList.add("hidden");
+    }
+  }
+
+  browser.storage.local.onChanged.addListener((changes) => {
+    console.log(changes);
+    const { processing: processingChange, ...rest } = changes;
+    const processing = processingChange.newValue;
+    console.log(`Local Storage onChanged. Processing ${processing}`);
+
+    toggleProcessingState(processing);
+  })
 }
 
 
@@ -327,12 +377,7 @@ function setup() {
   }
 
   function setupPageDbs() {
-    return browser
-      .tabs
-      .executeScript({ file: "/content_scripts/read_dbs.js"})
-      .then((script_results) => {
-        showDBs(script_results[0])
-      })
+    return refreshDisplayDBs();
   }
 
   async function setupPopup() {

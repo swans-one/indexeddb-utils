@@ -18,5 +18,5 @@
         "persistent": false,
         "type": "module"
     },
-    "permissions": ["activeTab"]
+    "permissions": ["activeTab", "storage"]
 }

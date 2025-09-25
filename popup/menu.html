@@ -25,35 +25,42 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   </head>
   <body>
     <h1>IndexedDb Utils</h1>
-    <hr />
-    <h2>This page's databases</h2>
-    <table id="table-page-dbs">
-      <thead>
-        <tr>
-          <td>Database</td>
-          <td>Version</td>
-          <td>Store</td>
-          <td>Indexes</td>
-          <td>Records</td>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <h2>Snapshots</h2>
-    <div id="origin">
+    <div id="main-contents">
+      <hr />
+      <h2>This page's databases</h2>
+      <table id="table-page-dbs">
+        <thead>
+          <tr>
+            <td>Database</td>
+            <td>Version</td>
+            <td>Store</td>
+            <td>Indexes</td>
+            <td>Records</td>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <h2>Snapshots</h2>
+      <div id="origin">
+      </div>
+      <button id="button-delete-snapshots">
+        Delete All
+      </button>
+      <table id="table-snapshots">
+        <thead>
+          <tr>
+            <td>Database</td>
+            <td>Created</td>
+            <td>Records</td>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
-    <button id="button-delete-snapshots">
-      Delete All
-    </button>
-    <table id="table-snapshots">
-      <thead>
-        <tr>
-          <td>Database</td>
-          <td>Created</td>
-          <td>Records</td>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="processing" class="hidden">
+      <div id="processing-msg">
+        Currently processing DB Update. Please wait.
+      </div>
+    </div>
   </body>
 </html>

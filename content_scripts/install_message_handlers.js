@@ -95,6 +95,11 @@
           return acc + 1;
       });
     }
+
+    browser.runtime.sendMessage({
+      target: "popup",
+      command: "refresh-db-display"
+    })
     console.log(`${deleted} records deleted from ${storeCount} stores.`);
   }
 
@@ -127,8 +132,18 @@
     }).then((continueDelete) => {
       if (continueDelete) {
         console.log("Confirmed request to delete database");
+        browser.runtime.sendMessage({
+          target: 'background',
+          command: 'start-processing-notif',
+        });
         idbResponse(window.indexedDB.deleteDatabase(dbName), x => x)
-          .then((val) => { console.log("successfully deleted db"); })
+          .then((val) => {
+            console.log("successfully deleted db");
+            browser.runtime.sendMessage({
+              target: 'background',
+              command: 'end-processing-notif',
+            })
+          })
           .catch((error) => { console.log(error); });
       } else {
         console.log("Delete database request canceled");
