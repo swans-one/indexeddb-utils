@@ -83,3 +83,18 @@ export function promisePopupConfirm(message) {
     }
   });
 }
+
+/* Send a message to the current, active tab's content_script.
+
+   Returns a promise that resolves to the value of the response to the
+   underlying `sendMessage` call.
+ */
+export function sendContentScriptMessage(message) {
+  return browser
+    .tabs
+    .query({ active: true, currentWindow: true })
+    .then((activeTabs) => {
+      const tabId = activeTabs[0].id;
+      return browser.tabs.sendMessage(tabId, message);
+    });
+}

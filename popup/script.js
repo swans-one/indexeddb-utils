@@ -20,7 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import {
   idbCursorCollect, idbCursorEach, idbResponse, versionUpgrades
 } from '../modules/indexedDbUtilities.js';
-import { dbConnect, popupConfirm, promisePopupConfirm } from '../modules/core.js';
+import {
+  dbConnect, popupConfirm, promisePopupConfirm, sendContentScriptMessage
+} from '../modules/core.js';
 
 /* Idempotent
  */
@@ -136,16 +138,7 @@ function addButtons(inside, dbName, dbVersion) {
   /* onclick handler for buttons that sends the appropriate message */
   function sendMessage(clickEvent) {
     const {command, dbName, dbVersion} = clickEvent.target.dataset;
-    browser
-      .tabs
-      .query({ active: true, currentWindow: true})
-      .then((activeTabs) => {
-        // There should only be one active tab
-        const tabId = activeTabs[0].id;
-        browser.tabs.sendMessage(
-          tabId, {command: command, dbName: dbName, dbVersion: dbVersion}
-        );
-      });
+    sendContentScriptMessage({command, dbName, dbVersion});
   }
 
   const buttons = ["snapshot", "clear", "delete"];
@@ -160,15 +153,8 @@ function addButtons(inside, dbName, dbVersion) {
   }
 }
 
-async function getPageOrigin() {
-  return await browser
-    .tabs
-    .query({active: true, currentWindow: true})
-    .then(async (activeTabs) => {
-      const tabId = activeTabs[0].id;
-      const out = await browser.tabs.sendMessage(tabId, {command: "get-origin"});
-      return out;
-    });
+function getPageOrigin() {
+  return sendContentScriptMessage({command: "get-origin"});
 }
 
 async function refreshSnapshotDisplay(origin) {
@@ -194,13 +180,33 @@ async function getSnapshotMetadata(origin) {
 }
 
 
+/* Add nodes for the buttons on a snapshot element */
+function snapshotButtons(inside, snapshotKey) {
+  const buttons = [
+    { text: "restore", command: "kickoff-snapshot-restore" },
+    { text: "delete", command: "snapshot-delete"},
+  ]
+  for (const button of buttons) {
+    const b = document.createElement("button");
+    b.appendChild(document.createTextNode(button.text));
+    b.dataset.snapshotKey = snapshotKey;
+    b.dataset.command = button.command;
+    b.onclick = (ev) => {
+      const { command, snapshotKey } = ev.target.dataset;
+      browser.runtime.sendMessage({
+        target:"background", command, snapshotKey
+      });
+    }
+    inside.appendChild(b);
+  }
+}
+
 /* Idempotent, first clears anything currently displayed, then
    displays the data given
-
  */
 function displaySnapshots(origin, snapshots) {
+  // == Origin Info ==
   const originNode = document.querySelector("#origin");
-
   // Clear exisiting
   while (originNode.firstChild) {
     originNode.removeChild(originNode.firstChild);
@@ -210,6 +216,7 @@ function displaySnapshots(origin, snapshots) {
     `Snapshots for origin: "${origin}"`
   ));
 
+  // == Snapshot Table ==
   const tbody = document.querySelector("#table-snapshots tbody");
   // Clear existing
   while (tbody.firstChild) {
@@ -220,14 +227,23 @@ function displaySnapshots(origin, snapshots) {
   for (const snap of snapshots) {
     const tr = document.createElement("tr");
     tbody.appendChild(tr);
-    const colVals = [
-      `${snap.dbName} :: v${snap.dbVersion}`,
-      new Date(snap.created).toUTCString(),
-      snap.recordCount
+
+    const dbDiv = document.createElement("div");
+    dbDiv.appendChild(document.createTextNode(
+      `${snap.dbName} :: v${snap.dbVersion}`
+    ));
+    const buttonDiv = document.createElement("div");
+    dbDiv.appendChild(buttonDiv);
+    snapshotButtons(buttonDiv, snap.id);
+
+    const colNodes = [
+      dbDiv,
+      document.createTextNode(new Date(snap.created).toUTCString()),
+      document.createTextNode(snap.recordCount)
     ];
-    for (const val of colVals) {
+        for (const node of colNodes) {
       const td = document.createElement("td");
-      td.appendChild(document.createTextNode(val))
+      td.appendChild(node)
       tr.appendChild(td);
     }
   }
@@ -286,8 +302,6 @@ async function deleteAllSnapshots(origin) {
 // - [ ] Create a snapshot view
 //   - [x] Basic view
 //   - [x] Populated with data
-//   - [ ] Tabs for databases versus snapshot
-//   - [ ] Toggle filtering to just the current origin
 // - [ ] Snapshot removal
 //   - [ ] Delete a single snapshot
 //   - [x] Delete all snapshots
@@ -302,13 +316,15 @@ async function deleteAllSnapshots(origin) {
 //     - [ ] Better table styling
 //     - [ ] Put the buttons in the right places
 //     - [ ] The window shouldn't shrink when "processing"
-//   - [ ] Audit logging
-//   - [ ] Data flow improvements
-//     - [ ] "processing" state - should always reflect reality?
-//       - [ ] core function for doing "processing"
-//       - [ ] With "debounce" so popup doesn't flicker
-//       - [ ] More things use processing state
-//       - [ ] Opening the popup reflects the current state
+//   - [ ] Tabs for databases versus snapshot
+//   - [ ] Toggle filtering to just the current origin
+// - [ ] console.log usage audit
+// - [ ] Data flow improvements
+//   - [ ] "processing" state - should always reflect reality?
+//     - [ ] core function for doing "processing"
+//     - [ ] With "debounce" so popup doesn't flicker
+//     - [ ] More things use processing state
+//     - [ ] Opening the popup reflects the current state
 
 function installPopupMessageHandlers() {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {

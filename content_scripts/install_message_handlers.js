@@ -151,6 +151,11 @@
     })
   }
 
+  async function restoreSnapshot(msg) {
+    console.log("Restore Snapshot");
+    console.log(msg);
+  }
+
   function getOrigin(msg) {
     const origin = getOriginOrOpaque();
     return Promise.resolve(origin);
@@ -166,6 +171,9 @@
         break;
       case "delete":
         return deleteDb(message);
+        break;
+      case "restore-snapshot":
+        return restoreSnapshot(message);
         break;
       case "get-origin":
         return getOrigin(message);

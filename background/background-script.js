@@ -16,8 +16,14 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     case "end-processing-notif":
       return endProcessing(msg);
       break;
+    case "kickoff-snapshot-restore":
+      console.log("kickoff-snapshot-restore", msg);
+      break;
+    case "snapshot-delete":
+      console.log("snapshot-delete", msg);
+      break;
     default:
-      console.log(`Unknown message: $msg.command`);
+      console.log(`Unknown message: ${msg.command}`);
       break;
   }
 });
