@@ -1,5 +1,5 @@
 import { idbResponse } from '../modules/indexedDbUtilities.js';
-import { dbConnect } from '../modules/core.js';
+import { dbConnect, sendContentScriptMessage } from '../modules/core.js';
 
 browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg?.target || msg.target !== "background") {
@@ -18,6 +18,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       break;
     case "kickoff-snapshot-restore":
       console.log("kickoff-snapshot-restore", msg);
+      return kickoffSnapshotRestore(msg.snapshotKey);
       break;
     case "snapshot-delete":
       console.log("snapshot-delete", msg);
@@ -27,6 +28,17 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       break;
   }
 });
+
+/* Fetch the full snapshot from extension owned indexeddb and send it
+   to the content script to perform the actual restore logic.
+ */
+async function kickoffSnapshotRestore(keyId) {
+  const dbCon = await dbConnect();
+  const tx = dbCon.transaction('snapshots', 'readonly');
+  const store = tx.objectStore('snapshots');
+  const snapshot = await idbResponse(store.get(keyId), req => req.result);
+  return sendContentScriptMessage({command: "restore-snapshot", snapshot });
+}
 
 /* Set a local storage variable to show we're processing a request
 

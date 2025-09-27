@@ -194,7 +194,9 @@ function snapshotButtons(inside, snapshotKey) {
     b.onclick = (ev) => {
       const { command, snapshotKey } = ev.target.dataset;
       browser.runtime.sendMessage({
-        target:"background", command, snapshotKey
+        target:"background",
+        command,
+        snapshotKey: Number(snapshotKey),
       });
     }
     inside.appendChild(b);
