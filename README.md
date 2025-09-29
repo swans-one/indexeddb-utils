@@ -58,3 +58,5 @@ Future Development:
       slow.
   - [ ] Even though https://bugzilla.mozilla.org/show_bug.cgi?id=1878312
         is marked as resolved
+- [ ] Better error handling for snapshot restoration? Not sure if
+      needed.

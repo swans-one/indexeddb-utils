@@ -154,6 +154,32 @@
   async function restoreSnapshot(msg) {
     console.log("Restore Snapshot");
     console.log(msg);
+    const { dbName, stores, snapshot } = msg.snapshot;
+
+    const dbCon = await idbResponse(
+      window.indexedDB.open(dbName), req => req.result
+    );
+    const tx = dbCon.transaction(stores, "readwrite");
+
+    const putResults = [];
+    for (storeName of stores) {
+      const store = tx.objectStore(storeName);
+      for (entry of snapshot[storeName]) {
+        putResults.push(store.put(entry));
+      }
+    }
+
+    browser.runtime.sendMessage({
+      target: "popup",
+      command: "refresh-db-display"
+    })
+
+    return Promise.all(putResults).then((putIds) => {
+      console.log(
+        `Restored ${putIds.length} records from ${stores.length} stores`
+      );
+      return putIds;
+    })
   }
 
   function getOrigin(msg) {
