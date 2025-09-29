@@ -52,7 +52,9 @@ function showDBs(dbs) {
 
     /* The first `tr` gets db name & version, with rowSpan */
     const tdDbName = document.createElement("td");
-    tdDbName.appendChild(document.createTextNode(dbName));
+    const pDbName = document.createElement("p");
+    pDbName.appendChild(document.createTextNode(dbName))
+    tdDbName.appendChild(pDbName);
     tdDbName.rowSpan = metadata.length;
     tdDbName.classList.add("database-name");
     const div = document.createElement("div");
