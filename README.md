@@ -35,6 +35,15 @@ The solution, using the IndexedDB Utils extension:
 4. Delete the DB, rollback your code changes, and reload the page
 5. Restore the data you had in your local database, and go back to (2)
 
+# Privacy / Security
+
+All snapshots are kept in an extension-managed IndexedDB database
+within your browser. This means that your snapshot data never leaves
+your browser.
+
+This extension does not use any third party libraries and does not
+itself make any fetch requests.
+
 # License
 
 This project is licensed under the GPLv3. See COPYING for more
