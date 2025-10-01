@@ -136,6 +136,7 @@ function collapseObjects(objList, keys, eqFn) {
   return output;
 }
 
+/* Add buttons to the database rows */
 function addButtons(inside, dbName, dbVersion) {
   /* onclick handler for buttons that sends the appropriate message */
   function sendMessage(clickEvent) {

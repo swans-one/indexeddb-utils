@@ -22,12 +22,27 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       break;
     case "snapshot-delete":
       console.log("snapshot-delete", msg);
+      return snapshotDelete(msg);
       break;
     default:
       console.log(`Unknown message: ${msg.command}`);
       break;
   }
 });
+
+async function snapshotDelete(msg) {
+  const dbCon = await dbConnect();
+  const tx = dbCon.transaction('snapshots', 'readwrite');
+  const store = tx.objectStore('snapshots');
+  const response = idbResponse(
+    store.delete(msg.snapshotKey), req => req.result
+  );
+  browser.runtime.sendMessage({
+    target: "popup",
+    command: "refresh-snapshot-display",
+  })
+  return response;
+}
 
 /* Fetch the full snapshot from extension owned indexeddb and send it
    to the content script to perform the actual restore logic.
