@@ -295,51 +295,6 @@ async function deleteAllSnapshots(origin) {
   refreshSnapshotDisplay(origin);
 }
 
-// TODO: Next steps
-// - [x] "install message handler" script
-//   - [x] Has message handlers for snapshot, clear, delete
-//   - [x] Tie up basic message passing for buttons
-// - [x] Create an indexedDb database for snapshots here
-// - [x] Implement message functionality for
-//   - [x] "snapshot"
-//     - [x] Get origin information (window.origin or window.url if opaque origin)
-//     - [x] Get db info
-//     - [x] Get time info
-//     - [x] serialize all the contents of all stores
-//     - [x] save the snapshot
-//   - [x] "clear"
-//   - [x] "delete"
-// - [x] Create a snapshot view
-//   - [x] Basic view
-//   - [x] Populated with data
-// - [ ] Snapshot removal
-//   - [ ] Delete a single snapshot
-//   - [x] Delete all snapshots
-// - [ ] snapshot restore functionality
-//   - [x] Add a "restore" button to snapshot listings
-//   - [ ] Add "restore latest" button to databases
-// - [ ] UI improvements
-//   - [x] Refresh snapshots when a new one is added (or removed)
-//   - [x] Refresh on-page databases when a one is removed, or cleared
-//   - [x] Styling improvements
-//     - [x] Better fonts, spacing, etc
-//     - [x] Better table styling
-//     - [x] Put the buttons in the right places
-//     - [x] The window shouldn't shrink when "processing"
-//   - [x] Snapshots sorted descending
-//   - [ ] Tabs for databases versus snapshot
-//   - [ ] Toggle filtering to just the current origin
-// - [ ] console.log usage audit
-// - [ ] Data flow improvements
-//   - [ ] "processing" state - should always reflect reality?
-//     - [ ] core function for doing "processing"
-//     - [ ] With "debounce" so popup doesn't flicker
-//     - [ ] More things use processing state
-//     - [ ] Opening the popup reflects the current state
-// - [ ] Clean up this todo list
-//   - [ ] Migrate any remaining todos to contributing.md
-//   - [ ] Delete this list
-
 function installPopupMessageHandlers() {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Popup: ", message);
