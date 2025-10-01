@@ -1,62 +1,47 @@
 # IndexedDB Utils
 
-IndexedDB provides a convenient feature for upgrading database
-schemas, however, it doesn't provide any method for downgrading this
-schema.
+**Snapshot and restore** for developers using indexeddb.
 
-This browser extension provides utilities that let you easily perform
-the following operations that are useful when developing and testing
-indexeddb upgrades locally:
+This Firefox Add-on gives you a tool to managed indexeddb databases
+that is particularly useful during development:
 
-- Snapshot the curret state of the data for a table
-- Delete a table or database
-- Restore a given snapshot into the database
+- View info about databases, objectStores, indexes and record counts
+  on a given site.
+- Take snapshots of the data in an IndexedDB database
+- Delete an IndexedDB database
+- Clear data from an IndexedDB database
+- Restore snapshots back to the database.
 
+![Screenshot of the IndexedDB Utils extension popup, showing the interface being used on the Mozilla Developer Network homepage.](/assets/IndexedDB-Utils-2025-10-01.png)
 
-## IndexedDB background
+# Snapshot, Delete, Restore
 
-The way indexeddb is structured, you are making a sequence of
-monotonically increasing versions. This works well as you're deploying
-code across clients who may be updating at different
-schedules. I.e. one user of your website logs in every day and gets
-each new version right as it rolls out, where another user logs in
-once a month and could get 3 new versions at the same time.
+The *Snapshot -> Delete -> Restore* workflow is especially useful
+during the development of IndexedDB version upgrades.
 
-A built in assumption of this structure is that each new version works
-as expected, and leaves the whole database in a good state. This is a
-really difficult assumption to uphold. For production changes, we can
-hopefully do a good enough job of testing that rollbacks can be
-structured as rollforwards. But what about during development?
+The problem: IndexedDB ships with a built in method for updating
+client schemas:
+[`onupgradeneeded`](https://developer.mozilla.org/en-US/docs/Web/API/IDBOpenDBRequest/upgradeneeded_event). However,
+it doesn't have a built-in way to downgrade schema versions. During
+development this can mean it's easy to end up in a state where your
+local indexeddb database is upgraded to a version with bugs, and you
+have no easy way to fix it.
 
-During development, if you're using indexeddb, you need to have data
-loaded in a local database to test / develop. And when you're
-developing or testing version upgrades, it would be really easy to get
-the database into a version where you've messed up the data. You'd
-really rather roll back that change rather than ship a ton of partial
-/ broken / intermediate versions.
+The solution, using the IndexedDB Utils extension:
 
-However, IndexedDb doesn't ship with a concept of version
-rollbacks. The suggestion of doing rollbacks using a rollforward isn't
-practical for development. It's also not practical to just be
-extremely careful in developing new versions such that you don't
+1. Take a snapshot of the database
+2. Write your version update code
+3. Test your version update. If it works great! Otherwise:
+4. Delete the DB, rollback your code changes, and reload the page
+5. Restore the data you had in your local database, and go back to (2)
 
+# License
 
-# Todos:
+This project is licensed under the GPLv3. See COPYING for more
+details.
 
-- [x] Create a small test page / script
-- [x] Read in what the current databases & tables are on the page
-- [x] Take a snapshot of a current database / table
-- [x] Delete all data from a database / table
-- [ ] Restore a snapshot
+# Contributing
 
-Future Development:
-
-- [ ] Better schema information beyond index names:
-  - column name, unique, autoincrementing, multi-index, etc
-- [ ] Value browser for data in the db
-- [ ] Figure out why deleting an indexedDB database in firefox is so
-      slow.
-  - [ ] Even though https://bugzilla.mozilla.org/show_bug.cgi?id=1878312
-        is marked as resolved
-- [ ] Better error handling for snapshot restoration? Not sure if
-      needed.
+If you would like to contribute see Contributing.md for more
+details. Before making a pull request, please first open an issue to
+discuss.
