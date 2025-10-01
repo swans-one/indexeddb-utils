@@ -172,12 +172,17 @@ async function getSnapshotMetadata(origin) {
   const byOrigin = store.index('by_origin');
   const range = IDBKeyRange.only(origin);
 
+  function sortDateDesc(a, b) {
+    return b.created - a.created;
+  }
+
   const snapshotMetadata = await idbCursorCollect(
     byOrigin, range, (v) => {
       const {snapshot: _, ...metadata} = v;
       return metadata;
     }
   );
+  snapshotMetadata.sort(sortDateDesc)
   return snapshotMetadata;
 }
 
@@ -303,23 +308,24 @@ async function deleteAllSnapshots(origin) {
 //     - [x] save the snapshot
 //   - [x] "clear"
 //   - [x] "delete"
-// - [ ] Create a snapshot view
+// - [x] Create a snapshot view
 //   - [x] Basic view
 //   - [x] Populated with data
 // - [ ] Snapshot removal
 //   - [ ] Delete a single snapshot
 //   - [x] Delete all snapshots
 // - [ ] snapshot restore functionality
-//   - [ ] Add a "restore" button to snapshot listings
+//   - [x] Add a "restore" button to snapshot listings
 //   - [ ] Add "restore latest" button to databases
 // - [ ] UI improvements
 //   - [x] Refresh snapshots when a new one is added (or removed)
 //   - [x] Refresh on-page databases when a one is removed, or cleared
-//   - [ ] Styling improvements
-//     - [ ] Better fonts, spacing, etc
-//     - [ ] Better table styling
-//     - [ ] Put the buttons in the right places
-//     - [ ] The window shouldn't shrink when "processing"
+//   - [x] Styling improvements
+//     - [x] Better fonts, spacing, etc
+//     - [x] Better table styling
+//     - [x] Put the buttons in the right places
+//     - [x] The window shouldn't shrink when "processing"
+//   - [x] Snapshots sorted descending
 //   - [ ] Tabs for databases versus snapshot
 //   - [ ] Toggle filtering to just the current origin
 // - [ ] console.log usage audit
@@ -329,6 +335,9 @@ async function deleteAllSnapshots(origin) {
 //     - [ ] With "debounce" so popup doesn't flicker
 //     - [ ] More things use processing state
 //     - [ ] Opening the popup reflects the current state
+// - [ ] Clean up this todo list
+//   - [ ] Migrate any remaining todos to contributing.md
+//   - [ ] Delete this list
 
 function installPopupMessageHandlers() {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
