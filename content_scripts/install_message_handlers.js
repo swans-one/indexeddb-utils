@@ -18,10 +18,9 @@
  */
 
 (async () => {
-  const utilsURL = browser.runtime.getURL('modules/indexedDbUtilities.js')
   const {
     idbCursorEach, idbResponse, getOriginOrOpaque
-  } = await import(utilsURL);
+  } = await import(browser.runtime.getURL('modules/indexedDbUtilities.js'));
 
   /* We only want to install message handlers on the window once */
   if (window.indexedDbUtilsInstallMessageHandlersHasRun) {

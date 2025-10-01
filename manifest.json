@@ -18,5 +18,12 @@
         "persistent": false,
         "type": "module"
     },
-    "permissions": ["activeTab", "storage"]
+    "permissions": ["activeTab", "storage"],
+    "browser_specific_settings": {
+        "gecko": {
+            "data_collection_permissions": {
+                "required": ["none"]
+            }
+        }
+    }
 }
