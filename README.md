@@ -14,6 +14,8 @@ that is particularly useful during development:
 
 ![Screenshot of the IndexedDB Utils extension popup, showing the interface being used on the Mozilla Developer Network homepage.](/assets/IndexedDB-Utils-2025-10-01.png)
 
+Get the Firefox Add-on here: https://addons.mozilla.org/en-US/firefox/addon/indexeddb-utils/
+
 # Snapshot, Delete, Restore
 
 The *Snapshot -> Delete -> Restore* workflow is especially useful
